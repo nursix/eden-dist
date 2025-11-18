@@ -1,0 +1,1 @@
+1 2   * * *   root   /usr/local/bin/backup >/dev/null 2>&1

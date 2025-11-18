@@ -1,0 +1,120 @@
+#!/bin/bash
+
+# Target Platform =============================================================
+#
+if [ $# -lt 1 ]; then
+    echo "Usage: pack.sh <platform>"
+    exit 1
+fi
+PLATFORM=$1
+
+# Build home ==================================================================
+#
+BUILD_HOME=$(realpath $PLATFORM)
+if [ ! -d $BUILD_HOME ]; then
+    echo "Platform $PLATFORM sources not found"
+    exit -1
+fi
+
+# Variables for build =========================================================
+#
+BUILD_VERSION=1
+
+EDEN_VERSION=6.0
+EDEN_HISTORY=2025-05-13
+
+WEB2PY_VERSION=49bb23c
+WEB2PY_HISTORY=2023-11-10
+
+TARGET=sahana-eden-"$PLATFORM"_"$EDEN_VERSION"-"$BUILD_VERSION"_all
+
+DIST=$BUILD_HOME/dist
+ASSETS=$BUILD_HOME/assets
+CONTROLS=$BUILD_HOME/DEBIAN
+
+BUILD=$DIST/$TARGET
+PACKAGE=$BUILD.deb
+
+WEB2PY=$BUILD/home/web2py
+APPS=$WEB2PY/applications
+EDEN=$APPS/eden
+
+# Variables for eden.conf =====================================================
+#
+INSTANCE=prod
+APPNAME=eden
+
+WEB2PY_HOME=/home/web2py
+APPS_HOME=$WEB2PY_HOME/applications
+EDEN_HOME=$APPS_HOME/$APPNAME
+
+DBNAME=eden
+DBUSER=eden
+
+UWSGI_SOCKET=59025
+UWSGI_WORKERS=2
+UWSGI_UID=web2py
+UWSGI_GID=web2py
+
+# =============================================================================
+# Remove previous build
+#
+rm -rf $BUILD
+rm -f $PACKAGE
+
+# =============================================================================
+# Prepare new build
+#
+mkdir -p $BUILD
+mkdir -p $BUILD/home
+
+# =============================================================================
+# Clone + prepare web2py
+#
+cd $BUILD/home
+if [ ! -d web2py ]; then
+    git clone --branch master --shallow-since=$WEB2PY_HISTORY https://github.com/web2py/web2py.git
+fi
+cd $WEB2PY
+git reset --hard $WEB2PY_VERSION
+git submodule update --depth=1 --init --recursive
+
+# =============================================================================
+# Clone + prepare eden
+#
+cd $APPS
+if [ ! -d eden ]; then
+    git clone --branch master --shallow-since=$EDEN_HISTORY https://github.com/sahana/eden.git
+fi
+cd $EDEN
+git reset --hard $EDEN_VERSION
+git submodule update --depth=1 --init --recursive
+
+# =============================================================================
+# Prepare web2py
+#
+cd $WEB2PY
+cp handlers/wsgihandler.py .
+
+# Generate assets =============================================================
+
+. $BUILD_HOME/generate.sh
+
+# =============================================================================
+# Copy assets
+#
+cp -r $ASSETS/* $BUILD
+
+# =============================================================================
+# Copy controls
+#
+mkdir -p $BUILD/DEBIAN
+cp $CONTROLS/* $BUILD/DEBIAN
+
+# =============================================================================
+# Build package
+#
+cd $DIST
+dpkg-deb --root-owner-group --build $TARGET
+
+# END =========================================================================

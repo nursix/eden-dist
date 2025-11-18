@@ -1,0 +1,12 @@
+#!/bin/bash
+
+# Remove the web2py user ======================================================
+#
+if id "web2py" >/dev/null 2>&1; then
+    deluser --remove-home web2py
+fi
+if grep -q -E "^web2py:" /etc/group; then
+    delgroup --only-if-empty web2py
+fi
+
+# END =========================================================================

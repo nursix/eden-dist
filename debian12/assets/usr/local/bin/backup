@@ -1,0 +1,110 @@
+#!/bin/bash
+
+# Variables ===================================================================
+#
+. /usr/local/lib/sahana/edenvars.sh
+
+BACKUP=/var/backups/eden
+
+NEW=$(date -d"next sunday - 1 week" +%Y%m%d)
+OLD=$(date -d"next sunday - 3 weeks" +%Y%m%d)
+TODAY=$(date +"%Y%m%d")
+
+RET=-1 # default return value
+
+# Create backup directory =====================================================
+#
+mkdir -p $BACKUP
+chown postgres $BACKUP
+
+# Check if already running ====================================================
+#
+CURRENT=$BACKUP/backup-$INSTANCE-$NEW
+if [ -f $CURRENT/lock ]; then
+    echo "Already running"
+    exit -1
+fi
+
+# Remove the target directory if it is Sunday =================================
+#
+DOW=$(date +%u)
+if [ "$DOW" = "0" ] && [ -d $CURRENT ]; then
+    rm -rf $CURRENT
+fi
+
+# Create the target directory if it does not exist ============================
+#
+if [ ! -d $CURRENT ]; then
+    mkdir -p $CURRENT
+    chown postgres $CURRENT
+fi
+
+# Create lock file ============================================================
+#
+touch $CURRENT/lock
+
+# The metadata of the last full backup ========================================
+#
+BASE=$CURRENT/uploads.snar
+if [ ! -f $BASE ]; then
+    rm -f $CURRENT/uploads*
+    level=0
+else
+    level=1
+fi
+
+# Today's database dump =======================================================
+#
+SQLDUMP=$CURRENT/$DBNAME-$TODAY.sql
+rm -f $SQLDUMP
+rm -f $SQLDUMP.bz2
+su -c - postgres "pg_dump -c $DBNAME > $SQLDUMP"
+if [ $? -eq 0 ]; then
+    bzip2 $SQLDUMP
+else
+    echo "Database backup failed"
+    rm -f $SQLDUMP
+fi
+
+# Backup config ===============================================================
+#
+cp $EDEN_HOME/models/000_config.py $CURRENT/000_config-$TODAY.py
+
+# Uploads backup ==============================================================
+#
+if [ -f $SQLDUMP.bz2 ]; then
+    if [ $level -eq 0 ]; then
+        # Full backup of uploads, also creates metadata file
+        ARCHIVE=$CURRENT/uploads-$TODAY.full.tgz
+        rm -f ARCHIVE
+        rm -f BASE
+        tar -czvf $ARCHIVE --dereference --listed-incremental=$BASE -C $EDEN_HOME ./uploads
+        RET=$?
+    fi
+    if [ $level -eq 1 ]; then
+        # Today's differential backup for uploads, using a copy of the metadata
+        ARCHIVE=$CURRENT/uploads-$TODAY.diff.tgz
+        SNAPSHOT=$CURRENT/diff.snar
+        rm -f $ARCHIVE
+        rm -f $SNAPSHOT
+        cp $BASE $SNAPSHOT
+        tar -czvf $ARCHIVE --dereference --listed-incremental=$SNAPSHOT -C $EDEN_HOME ./uploads
+        RET=$?
+        rm -f $SNAPSHOT
+    fi
+fi
+
+# Remove old backups ==========================================================
+# - only if there was no failure above
+#
+if [ $RET -eq 0 ]; then
+    PREVIOUS=$BACKUP/backup-$INSTANCE-$OLD
+    if [ -d $PREVIOUS ]; then
+        rm -rf $PREVIOUS
+    fi
+else
+    echo "Uploads backup failed"
+fi
+
+rm -f $CURRENT/lock
+exit $RET

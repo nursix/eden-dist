@@ -1,0 +1,10 @@
+*/dist/*
+*/assets/tmp/*
+.~lock.*.csv#
+*.log
+*.pyc
+*.~*~
+.directory
+.pythonhistory
+.idea
+.sass-cache

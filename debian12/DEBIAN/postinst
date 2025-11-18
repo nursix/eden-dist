@@ -1,0 +1,106 @@
+#!/bin/bash
+
+# Load variables ==============================================================
+#
+. /usr/local/lib/sahana/edenvars.sh
+
+# Add web2py user =============================================================
+#
+echo -e "Adding web2py user and group...\c"
+
+if ! id "web2py" >/dev/null 2>&1; then
+    adduser --system --disabled-password web2py
+fi
+if ! grep -q -E "^web2py:" /etc/group; then
+    addgroup web2py
+fi
+
+echo "done"
+
+# Create missing directories and fix permissions ==============================
+#
+echo -e "Fixing directories and permissions...\c"
+
+chown web2py $WEB2PY_HOME
+declare -a ADMINDIRS=("cache"
+                      "cron"
+                      "databases"
+                      "errors"
+                      "sessions"
+                      "uploads"
+                      )
+for i in "${ADMINDIRS[@]}"
+do
+    if [ ! -d "$i" ]; then
+        mkdir -p $APPS_HOME/admin/$i
+    fi
+    chown web2py $APPS_HOME/admin/$i
+done
+
+chown web2py $EDEN_HOME
+declare -a EDENDIRS=("cache"
+                     "cron"
+                     "databases"
+                     "models"
+                     "errors"
+                     "sessions"
+                     "static/fonts"
+                     "static/img/markers"
+                     "static/cache/chart"
+                     "uploads"
+                     "uploads/gis_cache"
+                     "uploads/images"
+                     "uploads/tracks"
+                     )
+for i in "${EDENDIRS[@]}"
+do
+    if [ ! -d "$i" ]; then
+        mkdir -p $EDEN_HOME/$i
+    fi
+    chown -R web2py $EDEN_HOME/$i
+done
+
+echo "done"
+
+# Configure Python ============================================================
+#
+echo -e "Configuring Python...\c"
+
+update-alternatives --install /usr/bin/python python /usr/bin/python3 2
+
+echo "done"
+
+# Build uWSGI =================================================================
+#
+echo "Building uWSGI Custom Server..."
+
+cd /tmp
+tar zxvf uwsgi-$UWSGI_VERSION.tar.gz
+
+cd uwsgi-$UWSGI_VERSION
+python uwsgiconfig.py --build pyonly
+
+cp uwsgi /usr/local/bin
+
+rm -rf /tmp/uwsgi-$UWSGI_VERSION
+mkdir -p /var/log/uwsgi
+chown $UWSGI_UID:www-data /var/log/uwsgi
+
+# Deploy Assets ===============================================================
+#
+echo -e "Deploying Assets...\c"
+
+cp /usr/local/lib/sahana/maintenance.html /var/www
+
+echo "done"
+
+# Create Symbolic Links =======================================================
+#
+echo -e "Creating symbolic links...\c"
+
+ln -s $EDEN_HOME $WEB2PY_HOME/eden
+ln -s $WEB2PY_HOME /home/$INSTANCE
+
+echo "done"
+
+# END =========================================================================

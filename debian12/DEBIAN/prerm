@@ -1,0 +1,37 @@
+#!/bin/bash
+
+. /usr/local/lib/sahana/edenvars.sh
+
+# Remove uWSGI custom server ==================================================
+#
+systemctl stop uwsgi-$INSTANCE
+rm -f /etc/init.d/uwsgi-$INSTANCE
+update-rc.d -f uwsgi-$INSTANCE remove
+
+rm -f /usr/local/bin/uwsgi
+
+# Remove assets ===============================================================
+#
+rm -f /var/www/maintenance.html
+# rm -f /etc/cron.d/eden
+
+# Remove generated files ======================================================
+#
+rm -f /etc/nginx/sites-enabled/$INSTANCE.conf
+rm -f /etc/nginx/sites-available/$INSTANCE.conf
+systemctl reload nginx
+
+rm -rf $EDEN_HOME/compiled
+rm -rf $EDEN_HOME/databases/*
+rm -rf $EDEN_HOME/sessions/*
+rm -rf $EDEN_HOME/errors/*
+rm -rf $EDEN_HOME/uploads/*
+
+rm -f $EDEN_HOME/models/000_config.py
+
+# Remove symbolic links =======================================================
+
+rm -f $WEB2PY_HOME/eden
+rm -f /home/$INSTANCE
+
+# END =========================================================================
