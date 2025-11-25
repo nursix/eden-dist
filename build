@@ -96,14 +96,21 @@ git submodule update --depth=1 --init --recursive
 cd $WEB2PY
 cp handlers/wsgihandler.py .
 
-# Generate assets =============================================================
-
-. $BUILD_HOME/generate.sh
-
-# =============================================================================
-# Copy assets
+# Handle assets ===============================================================
 #
-cp -r $ASSETS/* $BUILD
+# Copy common assets
+COMMONS=$(realpath $BUILD_HOME/../common)
+if [ -d $COMMONS ]; then
+    cp -r $COMMONS/* $BUILD
+fi
+
+# Copy version-specific assets
+if [ -d $ASSETS ]; then
+    cp -r $ASSETS/* $BUILD
+fi
+
+# Generate instance-specific assets
+. $BUILD_HOME/generate.sh
 
 # =============================================================================
 # Copy controls

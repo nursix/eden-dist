@@ -151,6 +151,24 @@ do_noop() {
     cd $WEB2PY_HOME
     do_run_script applications/eden/static/scripts/tools/noop.py
 }
+do_pull() {
+    do_stop_server
+
+    cd $EDEN_HOME
+    git reset --hard HEAD
+    git pull
+    git submodule update --recursive
+
+    rm -rf $EDEN_HOME/compiled
+
+    do_enable_migrate
+    do_noop
+
+    do_disable_migrate
+    do_compile
+
+    do_start_server
+}
 do_migrate() {
     do_stop_server
 
@@ -433,6 +451,9 @@ case "$1" in
     teardown)
         do_teardown
         ;;
+    pull)
+        do_pull
+        ;;
     migrate)
         do_migrate
         ;;
@@ -443,7 +464,8 @@ case "$1" in
         do_clean
         ;;
     *)
-        echo "Usage: edenctl {start|stop|shell|run|migrate|compile|clean}" >&2
+        echo "edenctl error: unknown command $1"
+        echo "Usage: edenctl {start|stop|shell|run|pull|migrate|compile|clean}" >&2
         exit 3
         ;;
 esac
