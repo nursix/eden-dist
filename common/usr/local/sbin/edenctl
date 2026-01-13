@@ -124,7 +124,7 @@ do_create_dbuser() {
     rm -f /tmp/pgpass.sql
 }
 do_drop_dbuser() {
-    su -c - postgres "DROP USER IF EXISTS $DBUSER"
+    su -c - postgres "psql -c 'DROP USER IF EXISTS $DBUSER;'"
 }
 do_drop_db() {
     pkill -f "postgres: $DBUSER $DBNAME"
@@ -366,6 +366,11 @@ do_setup() {
     if [ $? -eq 0 ]; then
         do_create_dbuser $DBUSER $DBPASSWD
         do_create_db
+        echo -n "Update Eden config for database..."
+        sed -i 's|#settings.database.db_type = "postgres"|settings.database.db_type = "postgres"|' $CONFIG
+        sed -i "s|#settings.database.password = \"password\"|settings.database.password = \"$DBPASSWD\"|" $CONFIG
+        sed -i 's|#settings.gis.spatialdb = True|settings.gis.spatialdb = True|' $CONFIG
+        echo "Done"
     fi
 
     # TODO Configure backup

@@ -18,13 +18,12 @@ fi
 
 # Variables for build =========================================================
 #
-BUILD_VERSION=1
+if [ ! -f $BUILD_HOME/versions.sh ]; then
+    echo "Platform $PLATFORM version file not found"
+    exit -1
+fi
 
-EDEN_VERSION=6.0
-EDEN_HISTORY=2025-05-13
-
-WEB2PY_VERSION=49bb23c
-WEB2PY_HISTORY=2023-11-10
+. $BUILD_HOME/versions.sh
 
 TARGET=sahana-eden-"$PLATFORM"_"$EDEN_VERSION"-"$BUILD_VERSION"_all
 
@@ -73,7 +72,7 @@ mkdir -p $BUILD/home
 #
 cd $BUILD/home
 if [ ! -d web2py ]; then
-    git clone --branch master --shallow-since=$WEB2PY_HISTORY https://github.com/web2py/web2py.git
+    git clone --branch $WEB2PY_BRANCH --shallow-since=$WEB2PY_HISTORY https://github.com/web2py/web2py.git
 fi
 cd $WEB2PY
 git reset --hard $WEB2PY_VERSION
@@ -84,7 +83,7 @@ git submodule update --depth=1 --init --recursive
 #
 cd $APPS
 if [ ! -d eden ]; then
-    git clone --branch master --shallow-since=$EDEN_HISTORY https://github.com/sahana/eden.git
+    git clone --branch $EDEN_BRANCH --shallow-since=$EDEN_HISTORY https://github.com/sahana/eden.git
 fi
 cd $EDEN
 git reset --hard $EDEN_VERSION

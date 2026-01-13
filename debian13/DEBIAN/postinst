@@ -60,6 +60,10 @@ do
     chown -R web2py $EDEN_HOME/$i
 done
 
+# Declaring safe directories for git (for pull, which is normally run as root)
+git config --global --add safe.directory $WEB2PY_HOME
+git config --global --add safe.directory $EDEN_HOME
+
 echo "done"
 
 # Configure Python ============================================================
