@@ -78,6 +78,16 @@ cd $WEB2PY
 git reset --hard $WEB2PY_VERSION
 git submodule update --depth=1 --init --recursive
 
+# Apply web2py/PyDAL patches as required
+if [ -f $BUILD_HOME/patches/web2py.diff ]; then
+    cd $WEB2PY
+    git apply $BUILD_HOME/patches/web2py.diff
+fi
+if [ -f $BUILD_HOME/patches/pydal.diff ]; then
+    cd $WEB2PY/gluon/packages/pydal
+    git apply $BUILD_HOME/patches/pydal.diff
+fi
+
 # =============================================================================
 # Clone + prepare eden
 #
