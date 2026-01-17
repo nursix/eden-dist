@@ -94,7 +94,7 @@ do_start_server() {
 }
 do_open_shell() {
     cd $WEB2PY_HOME
-    python web2py.py -S eden -M
+    python web2py.py -S $APPNAME -M
 }
 do_run_script() {
     cd $WEB2PY_HOME
@@ -114,6 +114,14 @@ do_enable_prepop() {
 }
 do_disable_prepop() {
     sed -i 's/#settings.base.prepopulate = 0/settings.base.prepopulate = 0/g' $CONFIG
+}
+do_set_template() {
+    cd $WEB2PY_HOME
+    cp $EDEN_HOME/models/000_config.py 000_config.py.bak
+    python web2py.py --no_banner -S $APPNAME -R /applications/$APPNAME/static/scripts/tools/set_template.py -A $1 2>&1
+    if [ $? -ne 0 ]; then
+        cp 000_config.py.bak $EDEN_HOME/models/000_config.py
+    fi
 }
 
 # Database management =========================================================
@@ -149,7 +157,7 @@ do_compile() {
 }
 do_noop() {
     cd $WEB2PY_HOME
-    do_run_script applications/eden/static/scripts/tools/noop.py
+    do_run_script applications/$APPNAME/static/scripts/tools/noop.py
 }
 do_pull() {
     do_stop_server
@@ -350,7 +358,7 @@ do_setup() {
         rm -f $CONFIG
         cp $EDEN_HOME/modules/templates/000_config.py $EDEN_HOME/models
 
-        sed -i "s|settings.base.template = \"default\"|settings.base.template = \"$TEMPLATE\"|" $CONFIG
+        do_set_template "$TEMPLATE"
         sed -i 's|EDITING_CONFIG_FILE = False|EDITING_CONFIG_FILE = True|' $CONFIG
 
         # Create a unique HMAC key for password encryption
@@ -448,10 +456,13 @@ case "$1" in
         do_open_shell
         ;;
     run)
-        do_run_script $1
+        do_run_script $2
         ;;
     setup)
         do_setup
+        ;;
+    template)
+        do_set_template $2
         ;;
     teardown)
         do_teardown
