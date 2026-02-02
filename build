@@ -31,6 +31,9 @@ WEB2PY_REPO=https://github.com/web2py/web2py.git
 
 TARGET=sahana-eden-"$PLATFORM"_"$EDEN_VERSION"-"$BUILD_VERSION"_all
 
+INSTANCE=prod
+APPNAME=eden
+
 DIST=$BUILD_HOME/dist
 ASSETS=$BUILD_HOME/assets
 CONTROLS=$BUILD_HOME/DEBIAN
@@ -40,13 +43,10 @@ PACKAGE=$BUILD.deb
 
 WEB2PY=$BUILD/home/web2py
 APPS=$WEB2PY/applications
-EDEN=$APPS/eden
+EDEN=$APPS/$APPNAME
 
 # Variables for eden.conf =====================================================
 #
-INSTANCE=prod
-APPNAME=eden
-
 WEB2PY_HOME=/home/web2py
 APPS_HOME=$WEB2PY_HOME/applications
 EDEN_HOME=$APPS_HOME/$APPNAME
@@ -97,7 +97,7 @@ fi
 #
 cd $APPS
 if [ ! -d eden ]; then
-    git clone --branch $EDEN_BRANCH --shallow-since=$EDEN_HISTORY $EDEN_REPO
+    git clone --branch $EDEN_BRANCH --shallow-since=$EDEN_HISTORY $EDEN_REPO $APPNAME
 fi
 cd $EDEN
 git reset --hard $EDEN_VERSION

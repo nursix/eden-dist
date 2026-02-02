@@ -1,5 +1,5 @@
 Package: sahana-eden
-Version: 6.0
+Version: 6.1
 Maintainer: Dominic <dominic@sahanafoundation.org>
 Depends: build-essential,
          cron,

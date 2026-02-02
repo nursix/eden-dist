@@ -118,7 +118,7 @@ do_disable_prepop() {
 do_set_template() {
     cd $WEB2PY_HOME
     cp $EDEN_HOME/models/000_config.py 000_config.py.bak
-    python web2py.py --no_banner -S $APPNAME -R /applications/$APPNAME/static/scripts/tools/set_template.py -A $1 2>&1
+    python web2py.py --no_banner -S $APPNAME -R applications/$APPNAME/static/scripts/tools/set_template.py -A $1 2>&1
     if [ $? -ne 0 ]; then
         cp 000_config.py.bak $EDEN_HOME/models/000_config.py
     fi
