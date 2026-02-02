@@ -55,11 +55,42 @@ fi
 
 # Today's database dump =======================================================
 #
+DBHOST=localhost
+DBHOST_USER=
+DBHOST_KEY=
+if [ -f $DBHOST_CONF ]; then
+    . $DBHOST_CONF
+fi
+if [ "$DBHOST" != "localhost" ] && [ "$DBHOST_USER" != "" ] && [ -f $DBHOST_KEY ]; then
+    REMOTEDB=0
+else
+    REMOTEDB=1
+fi
+
 SQLDUMP=$CURRENT/$DBNAME-$TODAY.sql
 rm -f $SQLDUMP
 rm -f $SQLDUMP.bz2
-su -c - postgres "pg_dump -c $DBNAME > $SQLDUMP"
-if [ $? -eq 0 ]; then
+if [ $REMOTEDB -eq 0 ]; then
+    SQLTEMPFILE=/tmp/$DBNAME-$TODAY.sql
+    ssh -i $DBHOST_KEY $DBHOST_USER@$DBHOST /bin/bash << EOF
+        sudo su -
+        rm -f $SQLTEMPFILE
+        su -c - postgres "pg_dump -c $DBNAME > $SQLTEMPFILE"
+EOF
+    if [ $? -eq 0 ]; then
+        scp -i $DBHOST_KEY $DBHOST_USER@$DBHOST:$SQLTEMPFILE $SQLDUMP
+    fi
+    ssh -i $DBHOST_KEY $DBHOST_USER@$DBHOST /bin/bash << EOF
+        sudo su -
+        rm -f $SQLTEMPFILE
+EOF
+else
+    su -c - postgres "pg_dump -c $DBNAME > $SQLDUMP"
+    if [ $? -ne 0 ]; then
+        rm -f $SQLDUMP
+    fi
+fi
+if [ -f $SQLDUMP ]; then
     bzip2 $SQLDUMP
 else
     echo "Database backup failed"

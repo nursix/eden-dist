@@ -126,7 +126,6 @@ do_set_template() {
 
 # Database management =========================================================
 #
-DBHOST_CONF=/etc/sahana/dbhost.conf
 DBHOST=localhost
 DBHOST_USER=
 DBHOST_KEY=
