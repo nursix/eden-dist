@@ -1,9 +1,11 @@
 BUILD_VERSION=1
 
+EDEN_REPO=https://github.com/sahana/eden.git
 EDEN_BRANCH=master
 EDEN_VERSION=6.1
 EDEN_HISTORY=2025-11-03
 
+WEB2PY_REPO=https://github.com/web2py/web2py.git
 WEB2PY_BRANCH=master
 WEB2PY_VERSION=49bb23c
 WEB2PY_HISTORY=2023-11-10

@@ -13,7 +13,7 @@ rm -f /usr/local/bin/uwsgi
 # Remove assets ===============================================================
 #
 rm -f /var/www/maintenance.html
-# rm -f /etc/cron.d/eden
+rm -f /etc/cron.d/eden
 
 # Remove generated files ======================================================
 #

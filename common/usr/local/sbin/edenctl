@@ -437,7 +437,12 @@ do_setup() {
         echo "Done"
     fi
 
-    # TODO Configure backup
+    # Configure nightly backup ------------------------------------------------
+    ask_proceed "Configure Backups"
+    if [ $? -eq 0 ]; then
+        cp /usr/local/lib/sahana/eden-cron /etc/cron.d/eden
+        echo "Done"
+    fi
 
     # 1st run -----------------------------------------------------------------
     ask_proceed "First run"
@@ -489,7 +494,9 @@ do_teardown() {
             echo "Removing Eden configuration file"
             rm -f $CONFIG
 
-            # TODO remove backup configuration
+            # Remove backup configuration
+            echo "Removing backup configuration"
+            rm -f /etc/cron.d/eden
 
             return 0
             ;;

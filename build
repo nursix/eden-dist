@@ -23,6 +23,10 @@ if [ ! -f $BUILD_HOME/versions.sh ]; then
     exit -1
 fi
 
+# Standard repositories (can be overridden in versions.sh)
+EDEN_REPO=https://github.com/sahana/eden.git
+WEB2PY_REPO=https://github.com/web2py/web2py.git
+
 . $BUILD_HOME/versions.sh
 
 TARGET=sahana-eden-"$PLATFORM"_"$EDEN_VERSION"-"$BUILD_VERSION"_all
@@ -72,7 +76,7 @@ mkdir -p $BUILD/home
 #
 cd $BUILD/home
 if [ ! -d web2py ]; then
-    git clone --branch $WEB2PY_BRANCH --shallow-since=$WEB2PY_HISTORY https://github.com/web2py/web2py.git
+    git clone --branch $WEB2PY_BRANCH --shallow-since=$WEB2PY_HISTORY $WEB2PY_REPO
 fi
 cd $WEB2PY
 git reset --hard $WEB2PY_VERSION
@@ -93,7 +97,7 @@ fi
 #
 cd $APPS
 if [ ! -d eden ]; then
-    git clone --branch $EDEN_BRANCH --shallow-since=$EDEN_HISTORY https://github.com/sahana/eden.git
+    git clone --branch $EDEN_BRANCH --shallow-since=$EDEN_HISTORY $EDEN_REPO
 fi
 cd $EDEN
 git reset --hard $EDEN_VERSION
