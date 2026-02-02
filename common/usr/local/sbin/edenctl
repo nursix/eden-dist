@@ -126,26 +126,80 @@ do_set_template() {
 
 # Database management =========================================================
 #
+DBHOST_CONF=/etc/sahana/dbhost.conf
+DBHOST=localhost
+DBHOST_USER=
+DBHOST_KEY=
+if [ -f $DBHOST_CONF ]; then
+    . $DBHOST_CONF
+fi
+if [ "$DBHOST" != "localhost" ] && [ "$DBHOST_USER" != "" ] && [ -f $DBHOST_KEY ]; then
+    REMOTEDB=0
+else
+    REMOTEDB=1
+fi
+
 do_create_dbuser() {
-    echo "CREATE USER $1 WITH PASSWORD '$2';" > /tmp/pgpass.sql
-    su -c - postgres "psql -q -d template1 -f /tmp/pgpass.sql"
-    rm -f /tmp/pgpass.sql
+    if [ $REMOTEDB -eq 0 ]; then
+        ssh -i $DBHOST_KEY $DBHOST_USER@$DBHOST /bin/bash << EOF
+            sudo su -
+            echo "CREATE USER $1 WITH PASSWORD '$2';" > /tmp/pgpass.sql
+            su -c - postgres "psql -q -d template1 -f /tmp/pgpass.sql"
+            rm -f /tmp/pgpass.sql
+EOF
+    else
+        echo "CREATE USER $1 WITH PASSWORD '$2';" > /tmp/pgpass.sql
+        su -c - postgres "psql -q -d template1 -f /tmp/pgpass.sql"
+        rm -f /tmp/pgpass.sql
+    fi
 }
 do_drop_dbuser() {
-    su -c - postgres "psql -c 'DROP USER IF EXISTS $DBUSER;'"
+    if [ $REMOTEDB -eq 0 ]; then
+        ssh -i $DBHOST_KEY $DBHOST_USER@$DBHOST /bin/bash << EOF
+            sudo su -
+            su -c - postgres "psql -c 'DROP USER IF EXISTS $DBUSER;'"
+EOF
+    else
+        su -c - postgres "psql -c 'DROP USER IF EXISTS $DBUSER;'"
+    fi
 }
 do_drop_db() {
-    pkill -f "postgres: $DBUSER $DBNAME"
-    sudo -H -u postgres dropdb $DBNAME
+    if [ $REMOTEDB -eq 0 ]; then
+        ssh -i $DBHOST_KEY $DBHOST_USER@$DBHOST /bin/bash << EOF
+            sudo su -
+            pkill -f "postgres: $DBUSER $DBNAME"
+            sudo -H -u postgres dropdb $DBNAME
+EOF
+    else
+        pkill -f "postgres: $DBUSER $DBNAME"
+        sudo -H -u postgres dropdb $DBNAME
+    fi
 }
 do_create_db() {
-    su -c - postgres "createdb -O $DBUSER -E UTF8 $DBNAME -T template0"
-    su -c - postgres "psql -q -d $DBNAME -c 'CREATE EXTENSION postgis;'"
-    su -c - postgres "psql -q -d $DBNAME -c 'GRANT ALL ON geometry_columns TO $DBUSER;'"
-    su -c - postgres "psql -q -d $DBNAME -c 'GRANT ALL ON spatial_ref_sys TO $DBUSER;'"
+    if [ $REMOTEDB -eq 0 ]; then
+        ssh -i $DBHOST_KEY $DBHOST_USER@$DBHOST /bin/bash << EOF
+            sudo su -
+            su -c - postgres "createdb -O $DBUSER -E UTF8 $DBNAME -T template0"
+            su -c - postgres "psql -q -d $DBNAME -c 'CREATE EXTENSION postgis;'"
+            su -c - postgres "psql -q -d $DBNAME -c 'GRANT ALL ON geometry_columns TO $DBUSER;'"
+            su -c - postgres "psql -q -d $DBNAME -c 'GRANT ALL ON spatial_ref_sys TO $DBUSER;'"
+EOF
+    else
+        su -c - postgres "createdb -O $DBUSER -E UTF8 $DBNAME -T template0"
+        su -c - postgres "psql -q -d $DBNAME -c 'CREATE EXTENSION postgis;'"
+        su -c - postgres "psql -q -d $DBNAME -c 'GRANT ALL ON geometry_columns TO $DBUSER;'"
+        su -c - postgres "psql -q -d $DBNAME -c 'GRANT ALL ON spatial_ref_sys TO $DBUSER;'"
+    fi
 }
 do_check_db_exists() {
-    su -c - postgres "psql -lqt | cut -d \| -f 1 | grep -qw $DBNAME"
+    if [ $REMOTEDB -eq 0 ]; then
+        ssh -i $DBHOST_KEY $DBHOST_USER@$DBHOST /bin/bash << EOF
+            sudo su -
+            su -c - postgres "psql -lqt | cut -d \| -f 1 | grep -qw $DBNAME"
+EOF
+    else
+        su -c - postgres "psql -lqt | cut -d \| -f 1 | grep -qw $DBNAME"
+    fi
     return $?
 }
 
@@ -376,6 +430,9 @@ do_setup() {
         do_create_db
         echo -n "Update Eden config for database..."
         sed -i 's|#settings.database.db_type = "postgres"|settings.database.db_type = "postgres"|' $CONFIG
+        if [ $REMOTEDB -eq 0 ]; then
+            sed -i "s|#settings.database.host = \"localhost\"|settings.database.host = \"$DBHOST\"|" $CONFIG
+        fi
         sed -i "s|#settings.database.password = \"password\"|settings.database.password = \"$DBPASSWD\"|" $CONFIG
         sed -i 's|#settings.gis.spatialdb = True|settings.gis.spatialdb = True|' $CONFIG
         echo "Done"
