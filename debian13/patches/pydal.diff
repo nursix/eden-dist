@@ -1,5 +1,5 @@
 diff --git a/pydal/objects.py b/pydal/objects.py
-index cb7ba611..2655d32d 100644
+index cb7ba611..f33a19e9 100644
 --- a/pydal/objects.py
 +++ b/pydal/objects.py
 @@ -110,38 +110,40 @@ def get_default_validator(field, _cached_defaults={}):
@@ -78,6 +78,39 @@ index cb7ba611..2655d32d 100644
                  value = field.filter_in(value)
              new_fields[name] = (field, value)
              del empty_fieldnames[name]
+@@ -2218,8 +2222,8 @@ class Field(Expression, Serializable):
+ 
+     @staticmethod
+     def _todate(value, regex=re.compile(r"^\d\d\d\d-\d\d-\d\d$")):
+-        if value is None:
+-            return value
++        if value in (None, ""):
++            return None
+         if isinstance(value, datetime.date):
+             value = value.isoformat()
+         value = str(value)[:10]
+@@ -2228,8 +2232,8 @@ class Field(Expression, Serializable):
+ 
+     @staticmethod
+     def _totime(value, regex=re.compile(r"^\d\d:\d\d:\d\d$")):
+-        if value is None:
+-            return value
++        if value in (None, ""):
++            return None
+         if isinstance(value, datetime.time):
+             value = str(value)
+         value = f"{value}:00:00"[:8]
+@@ -2238,8 +2242,8 @@ class Field(Expression, Serializable):
+ 
+     @staticmethod
+     def _todatetime(value, regex=re.compile(r"^\d\d\d\d-\d\d-\d\d \d\d:\d\d:\d\d$")):
+-        if value is None:
+-            return value
++        if value in (None, ""):
++            return None
+         if isinstance(value, (datetime.date, datetime.datetime)):
+             value = str(value)
+         value = value.replace("T", " ")
 @@ -2540,7 +2544,13 @@ class Field(Expression, Serializable):
          if not self._db or tablename not in self._db:
              # The table being referenced is not defined yet
