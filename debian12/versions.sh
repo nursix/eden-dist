@@ -1,4 +1,4 @@
-BUILD_VERSION=1
+BUILD_VERSION=2
 
 EDEN_REPO=https://github.com/sahana/eden.git
 EDEN_BRANCH=master
